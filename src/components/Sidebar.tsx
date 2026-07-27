@@ -53,12 +53,45 @@ export const Sidebar: React.FC<SidebarProps> = ({
     >
       {/* Top Header: Logo */}
       <div className="flex items-center gap-2.5 mb-6">
-        <div
-          className="w-8 h-8 rounded-[10px] bg-[#2563EB] text-white flex items-center justify-center font-bold text-sm shadow-[0_4px_10px_rgba(37,99,235,0.25)] flex-shrink-0"
+        <svg
+          viewBox="0 0 120 100"
+          className="w-9 h-9 flex-shrink-0"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
           title="Viradity Workspace"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-        </div>
+          <defs>
+            <linearGradient id="viradity-left-leg" x1="15" y1="10" x2="65" y2="90" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#4F46E5" />
+              <stop offset="100%" stopColor="#2563EB" />
+            </linearGradient>
+            <linearGradient id="viradity-right-play" x1="50" y1="40" x2="100" y2="80" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#2563EB" />
+              <stop offset="100%" stopColor="#06B6D4" />
+            </linearGradient>
+            <linearGradient id="viradity-bars" x1="60" y1="10" x2="90" y2="40" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#06B6D4" />
+              <stop offset="100%" stopColor="#2563EB" />
+            </linearGradient>
+          </defs>
+
+          {/* Left Slanted Leg (V-left) */}
+          <path
+            d="M18 16C15.5 16 13 18.5 13 21.5C13 22.5 13.5 23.5 14 24.5L42 79.5C45.5 86.5 54.5 88 59 82.5L61.5 79C64 76 63 71.5 59.5 69.5L25.5 19.5C24.5 18 22.5 16 18 16Z"
+            fill="url(#viradity-left-leg)"
+          />
+
+          {/* Right Fold / Play Button (V-right/Play) */}
+          <path
+            d="M52.5 44C51 44 50 45 50 46.5V82.5C50 86 53.5 88 56.5 86L91.5 65.5C94.5 63.5 94.5 59 91.5 57L61.5 45C59 44 55.5 44 52.5 44Z"
+            fill="url(#viradity-right-play)"
+          />
+
+          {/* Three rounded vertical bars */}
+          <rect x="58" y="26" width="7" height="18" rx="3.5" fill="url(#viradity-bars)" />
+          <rect x="69" y="18" width="7" height="26" rx="3.5" fill="url(#viradity-bars)" />
+          <rect x="80" y="10" width="7" height="34" rx="3.5" fill="url(#viradity-bars)" />
+        </svg>
         <span className="text-[18px] font-bold text-[#1A1A1A] tracking-[-0.02em] leading-none">
           Viradity
         </span>

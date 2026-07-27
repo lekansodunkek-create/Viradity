@@ -3,29 +3,44 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Sparkles, Video, FolderPlus, ArrowRight } from 'lucide-react';
 
 interface CreateProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (projectName: string) => void;
+  onSuccess: (projectName: string, format: 'video' | 'shorts' | 'series') => void;
+  prefillName?: string;
 }
 
 export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  prefillName = '',
 }) => {
   const [projectName, setProjectName] = useState('');
   const [projectType, setProjectType] = useState<'video' | 'shorts' | 'series'>('video');
+
+  // Sync prefill title when modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      setProjectName(prefillName);
+      // Auto-detect format recommendation based on keywords
+      if (prefillName.toLowerCase().includes('shorts') || prefillName.toLowerCase().includes('vlog')) {
+        setProjectType('shorts');
+      } else {
+        setProjectType('video');
+      }
+    }
+  }, [isOpen, prefillName]);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (projectName.trim()) {
-      onSuccess(projectName.trim());
+      onSuccess(projectName.trim(), projectType);
       setProjectName('');
       onClose();
     }
