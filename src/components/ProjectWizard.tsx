@@ -201,6 +201,49 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({
     return `${views} Views`;
   };
 
+  // Helper function to format relative upload date (e.g. 8 months ago, 2 years ago)
+  const formatRelativeTime = (publishedAt?: string): string => {
+    if (!publishedAt) return "8 months ago";
+    const date = new Date(publishedAt);
+    if (isNaN(date.getTime())) return "8 months ago";
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 1) return "today";
+    if (diffDays < 7) return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
+    if (diffDays < 30) {
+      const weeks = Math.max(1, Math.floor(diffDays / 7));
+      return `${weeks} ${weeks === 1 ? 'week' : 'weeks'} ago`;
+    }
+    const diffMonths = Math.floor(diffDays / 30);
+    if (diffMonths < 12) return `${diffMonths} ${diffMonths === 1 ? 'month' : 'months'} ago`;
+    const diffYears = Math.max(1, Math.floor(diffMonths / 12));
+    return `${diffYears} ${diffYears === 1 ? 'year' : 'years'} ago`;
+  };
+
+  // Helper to render clean plain text without Markdown symbols (stars, hashes, bolding, etc.)
+  const renderCleanPlainText = (text: string) => {
+    if (!text) return null;
+    const cleaned = text
+      .replace(/\*\*/g, '')
+      .replace(/###?\s*/g, '')
+      .replace(/^[\*\-•]\s*/gm, '')
+      .replace(/`/g, '')
+      .trim();
+
+    const paragraphs = cleaned.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+    if (paragraphs.length === 0) return null;
+
+    return (
+      <div className="space-y-2.5 text-xs text-[#333333] leading-relaxed font-normal">
+        {paragraphs.map((para, idx) => (
+          <p key={idx}>{para}</p>
+        ))}
+      </div>
+    );
+  };
+
   // On-demand analysis handler
   const handleAnalyzeSection = async (item: TitleResultItem, section: 'why_it_works' | 'what_it_covers') => {
     const itemId = item.id;
@@ -595,159 +638,154 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({
       <div className="flex-1 min-h-0 bg-white border border-[#ECEEF2]/60 rounded-[20px] shadow-[0_2px_12px_rgba(0,0,0,0.01)] p-6 md:p-8 flex flex-col justify-between overflow-y-auto">
         <div className="space-y-6">
           
-          {/* STEP 1: TITLE (Handcrafted Premium SaaS Layout) */}
+          {/* STEP 1: TITLE (Handcrafted Premium Creator Layout) */}
           {activeStep === 'title' && (
-            <div className="animate-in fade-in duration-200">
-              <div className="flex flex-col lg:flex-row gap-6 items-start">
+            <div className="space-y-8 animate-in fade-in duration-200">
+              
+              {/* Form Input Section at Top of Main Content Area */}
+              <div className="bg-white border border-[#ECEEF2] rounded-[18px] p-6 shadow-[0_2px_14px_rgba(0,0,0,0.02)] space-y-6">
                 
-                {/* Left Sidebar (Configuration Panel ~ 25-30% Width) */}
-                <div className="w-full lg:w-[300px] xl:w-[330px] flex-shrink-0 bg-white border border-[#ECEEF2]/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] rounded-[16px] p-5 flex flex-col justify-between space-y-6">
-                  
-                  <div className="space-y-6">
-                    {/* Your Niche Section */}
-                    <div className="space-y-2">
-                      <label className="text-xs font-semibold text-[#1A1A1A] tracking-tight block">
-                        Your Niche
-                      </label>
-                      <div className="relative">
-                        <textarea
-                          rows={3}
-                          value={nicheInput}
-                          disabled={useSavedProfile}
-                          onChange={(e) => setNicheInput(e.target.value)}
-                          placeholder="e.g. I'm in Tech & AI Software Architecture, creating videos on system design..."
-                          className={`w-full px-3.5 py-2.5 rounded-[12px] text-xs border transition-all font-medium resize-none pb-7 ${
-                            nicheInput.length > 100
-                              ? 'border-rose-500 bg-rose-50/20 text-rose-900 focus:outline-none focus:ring-2 focus:ring-rose-500/20'
-                              : useSavedProfile 
-                                ? 'bg-[#F8F9FB] text-[#666666] cursor-not-allowed border-[#ECEEF2]/80' 
-                                : 'bg-white text-[#1A1A1A] focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/10'
-                          }`}
-                        />
-                        {/* Remaining character counter positioned at bottom right corner */}
-                        <div className="absolute right-3 bottom-2.5 pointer-events-none select-none">
-                          <span className={`text-[10px] font-semibold tabular-nums ${
-                            nicheInput.length > 100 ? 'text-rose-600 font-bold' : 'text-[#8E9299]'
-                          }`}>
-                            {100 - nicheInput.length} remaining
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Exceed warning message */}
-                      {nicheInput.length > 100 && (
-                        <p className="text-[11px] font-semibold text-rose-600 flex items-center gap-1.5 animate-in fade-in duration-150">
-                          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                          <span>Text exceeds the maximum limit of 100 characters.</span>
-                        </p>
-                      )}
-
-                      <label className="flex items-center gap-2 cursor-pointer mt-2 select-none text-xs text-[#666666] hover:text-[#1A1A1A] transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={useSavedProfile}
-                          onChange={(e) => handleToggleSavedProfile(e.target.checked)}
-                          className="w-3.5 h-3.5 rounded border-[#ECEEF2] text-[#2563EB] focus:ring-[#2563EB]/20 accent-[#2563EB]"
-                        />
-                        <span>Use saved profile</span>
-                      </label>
-                    </div>
-
-                    {/* Competitor Channels Section */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-semibold text-[#1A1A1A] tracking-tight block">
-                          Competitor Channels <span className="text-[11px] text-[#8E9299] font-normal lowercase ml-1">(optional)</span>
-                        </label>
-                      </div>
-
-                      <div className="space-y-2">
-                        {competitorChannels.map((channel, idx) => (
-                          <div key={idx} className="flex items-center gap-1.5">
-                            <input
-                              type="text"
-                              value={channel}
-                              disabled={useSavedChannels}
-                              onChange={(e) => handleUpdateChannel(idx, e.target.value)}
-                              placeholder="YouTube channel or video URL..."
-                              className={`flex-1 px-3.5 py-2 rounded-[10px] text-xs border border-[#ECEEF2] transition-all font-medium ${
-                                useSavedChannels 
-                                  ? 'bg-[#F8F9FB] text-[#666666] cursor-not-allowed border-[#ECEEF2]/80' 
-                                  : 'bg-white text-[#1A1A1A] focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/10'
-                              }`}
-                            />
-                            {!useSavedChannels && competitorChannels.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveChannel(idx)}
-                                className="w-8 h-8 rounded-[8px] text-[#8E9299] hover:text-[#1A1A1A] hover:bg-[#F1F3F5] border border-transparent hover:border-[#ECEEF2] flex items-center justify-center transition-all cursor-pointer"
-                                title="Remove channel"
-                                aria-label="Remove channel"
-                              >
-                                <Trash2 className="w-3.5 h-3.5 stroke-[1.75]" />
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-
-                      {!useSavedChannels && competitorChannels.length < 3 && (
-                        <button
-                          type="button"
-                          onClick={handleAddChannel}
-                          className="text-[11px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] flex items-center gap-1 transition-colors mt-2"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>Add Channel</span>
-                        </button>
-                      )}
-
-                      <label className="flex items-center gap-2 cursor-pointer mt-2.5 select-none text-xs text-[#666666] hover:text-[#1A1A1A] transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={useSavedChannels}
-                          onChange={(e) => handleToggleSavedChannels(e.target.checked)}
-                          className="w-3.5 h-3.5 rounded border-[#ECEEF2] text-[#2563EB] focus:ring-[#2563EB]/20 accent-[#2563EB]"
-                        />
-                        <span>Use saved channels</span>
-                      </label>
+                {/* 1. Your Niche */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-[#1A1A1A] tracking-tight block">
+                    Your Niche
+                  </label>
+                  <div className="relative">
+                    <textarea
+                      rows={3}
+                      value={nicheInput}
+                      disabled={useSavedProfile}
+                      onChange={(e) => setNicheInput(e.target.value)}
+                      placeholder="e.g. I'm in Tech & AI Software Architecture, creating videos on system design..."
+                      className={`w-full px-4 py-3 rounded-[12px] text-xs border transition-all font-medium resize-none pb-7 ${
+                        nicheInput.length > 100
+                          ? 'border-rose-500 bg-rose-50/20 text-rose-900 focus:outline-none focus:ring-2 focus:ring-rose-500/20'
+                          : useSavedProfile 
+                            ? 'bg-[#F8F9FB] text-[#666666] cursor-not-allowed border-[#ECEEF2]' 
+                            : 'bg-white text-[#1A1A1A] border-[#ECEEF2] focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/10'
+                      }`}
+                    />
+                    <div className="absolute right-3 bottom-2.5 pointer-events-none select-none">
+                      <span className={`text-[10px] font-semibold tabular-nums ${
+                        nicheInput.length > 100 ? 'text-rose-600 font-bold' : 'text-[#8E9299]'
+                      }`}>
+                        {100 - nicheInput.length} remaining
+                      </span>
                     </div>
                   </div>
 
-                  {/* Generate Button (Clean Rounded Stadium Pill Style) */}
-                  <div className="pt-4 border-t border-[#ECEEF2]/60">
-                    <button
-                      type="button"
-                      onClick={handleGenerateTitles}
-                      disabled={isGeneratingTitle}
-                      className="w-full py-3 px-6 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.98] text-white text-xs font-semibold tracking-wide shadow-[0_2px_10px_rgba(37,99,235,0.25)] hover:shadow-[0_4px_16px_rgba(37,99,235,0.35)] transition-all duration-150 flex items-center justify-center gap-2 disabled:opacity-60"
-                    >
-                      {isGeneratingTitle ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                          <span>Generating Titles...</span>
-                        </>
-                      ) : (
-                        <span>Generate Titles</span>
-                      )}
-                    </button>
-                  </div>
+                  {nicheInput.length > 100 && (
+                    <p className="text-[11px] font-semibold text-rose-600 flex items-center gap-1.5 animate-in fade-in duration-150">
+                      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>Text exceeds the maximum limit of 100 characters.</span>
+                    </p>
+                  )}
 
+                  <label className="flex items-center gap-2 cursor-pointer pt-0.5 select-none text-xs text-[#666666] hover:text-[#1A1A1A] transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={useSavedProfile}
+                      onChange={(e) => handleToggleSavedProfile(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded border-[#ECEEF2] text-[#2563EB] focus:ring-[#2563EB]/20 accent-[#2563EB]"
+                    />
+                    <span>Use saved profile</span>
+                  </label>
                 </div>
 
-                {/* Right Side (Generated Titles ~ 70-75% Width) */}
-                <div className="flex-1 min-w-0 space-y-4">
-                  
-                  {/* Results Header */}
-                  <div className="flex items-center justify-between px-1 mb-2">
-                    <div>
-                      <h3 className="text-xs font-bold text-[#1A1A1A] uppercase tracking-wider">
-                        Generated Titles
-                      </h3>
-                    </div>
+                {/* 2. Competitor Channels (Optional) */}
+                <div className="space-y-2 pt-2 border-t border-[#ECEEF2]/60">
+                  <label className="text-xs font-bold text-[#1A1A1A] tracking-tight block">
+                    Competitor Channels <span className="text-[11px] text-[#8E9299] font-normal lowercase ml-1">(optional)</span>
+                  </label>
+
+                  <div className="space-y-2 max-w-2xl">
+                    {competitorChannels.map((channel, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={channel}
+                          disabled={useSavedChannels}
+                          onChange={(e) => handleUpdateChannel(idx, e.target.value)}
+                          placeholder="YouTube channel name or video URL..."
+                          className={`flex-1 px-3.5 py-2.5 rounded-[10px] text-xs border border-[#ECEEF2] transition-all font-medium ${
+                            useSavedChannels 
+                              ? 'bg-[#F8F9FB] text-[#666666] cursor-not-allowed border-[#ECEEF2]' 
+                              : 'bg-white text-[#1A1A1A] focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/10'
+                          }`}
+                        />
+                        {!useSavedChannels && competitorChannels.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveChannel(idx)}
+                            className="w-9 h-9 rounded-[8px] text-[#8E9299] hover:text-[#1A1A1A] hover:bg-[#F1F3F5] border border-transparent hover:border-[#ECEEF2] flex items-center justify-center transition-all cursor-pointer"
+                            title="Remove channel"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
                   </div>
 
-                  {/* Single Clean & Mature Card Container for All Generated Titles */}
+                  {!useSavedChannels && competitorChannels.length < 3 && (
+                    <button
+                      type="button"
+                      onClick={handleAddChannel}
+                      className="text-[11px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] flex items-center gap-1 transition-colors pt-0.5"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Channel</span>
+                    </button>
+                  )}
+
+                  <label className="flex items-center gap-2 cursor-pointer pt-1 select-none text-xs text-[#666666] hover:text-[#1A1A1A] transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={useSavedChannels}
+                      onChange={(e) => handleToggleSavedChannels(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded border-[#ECEEF2] text-[#2563EB] focus:ring-[#2563EB]/20 accent-[#2563EB]"
+                    />
+                    <span>Use saved channels</span>
+                  </label>
+                </div>
+
+                {/* 3. Generate Titles Button */}
+                <div className="flex justify-end pt-2 border-t border-[#ECEEF2]/60">
+                  <button
+                    type="button"
+                    onClick={handleGenerateTitles}
+                    disabled={isGeneratingTitle}
+                    className="py-3 px-8 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.98] text-white text-xs font-semibold tracking-wide shadow-[0_2px_10px_rgba(37,99,235,0.25)] hover:shadow-[0_4px_16px_rgba(37,99,235,0.35)] transition-all duration-150 flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+                  >
+                    {isGeneratingTitle ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Generating Titles...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        <span>Generate Titles</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+              </div>
+
+              {/* Generated Recommendations Section Directly Underneath Form */}
+              {generatedTitles.length > 0 && (
+                <div className="space-y-4 pt-2 animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between px-1">
+                    <h3 className="text-xs font-bold text-[#1A1A1A] uppercase tracking-wider">
+                      Generated Recommendations
+                    </h3>
+                    <span className="text-xs text-[#666666] font-medium">
+                      {generatedTitles.length} ideas found
+                    </span>
+                  </div>
+
+                  {/* Single Clean Card Container for All Generated Titles */}
                   <div className="bg-white border border-[#ECEEF2] rounded-[18px] shadow-[0_2px_14px_rgba(0,0,0,0.02)] divide-y divide-[#ECEEF2]/70 overflow-hidden">
                     {generatedTitles.map((item) => {
                       const isExpanded = expandedTitleId === item.id;
@@ -757,10 +795,9 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({
                           key={item.id}
                           className="hover:bg-[#F8F9FB] transition-colors duration-150"
                         >
-                          {/* Title Item Bar */}
+                          {/* Title Card Header (Only Title, Views • Upload date • Creator name, Expand Button) */}
                           <div className="p-4 md:px-5 md:py-4 flex items-center justify-between gap-4">
                             
-                            {/* Title Text (Clicking selects title and toggles expansion cleanly) */}
                             <div 
                               onClick={() => {
                                 setTitle(item.title);
@@ -769,17 +806,23 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({
                                   setDocTitle(item.title);
                                 }
                               }}
-                              className="flex-1 min-w-0 cursor-pointer group flex items-center gap-3"
+                              className="flex-1 min-w-0 cursor-pointer group space-y-1"
                             >
-                              <p className="text-xs md:text-sm font-semibold text-[#1A1A1A] leading-relaxed transition-colors">
+                              {/* Exact Original YouTube Title */}
+                              <p className="text-xs md:text-sm font-semibold text-[#1A1A1A] leading-relaxed transition-colors group-hover:text-[#2563EB]">
                                 {item.title}
+                              </p>
+                              
+                              {/* View count • Upload date • Creator name */}
+                              <p className="text-[11px] text-[#666666] font-medium">
+                                {formatViewCount(item.views)} • {formatRelativeTime(item.publishedAt)} • {item.channelTitle || 'YouTube Creator'}
                               </p>
                             </div>
 
-                            {/* Action Buttons Right Side (Variation Wand Icon & Disclosure Arrow) */}
-                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                            {/* Action Buttons Right Side */}
+                            <div className="flex items-center gap-2 flex-shrink-0">
                               
-                              {/* Variations Wand Icon Button (Minimal neutral hover) */}
+                              {/* Variations Wand Button */}
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -788,12 +831,11 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({
                                 }}
                                 className="w-8 h-8 rounded-[8px] text-[#666666] hover:text-[#1A1A1A] hover:bg-[#F1F3F5] border border-transparent hover:border-[#ECEEF2] flex items-center justify-center transition-all cursor-pointer group/varBtn"
                                 title="Generate title variations"
-                                aria-label="Generate title variations"
                               >
                                 <MagicWandIcon className="w-4 h-4 text-[#666666] group-hover/varBtn:text-[#1A1A1A] transition-colors" />
                               </button>
 
-                              {/* Subtle Disclosure Dropdown Arrow (Minimal neutral hover) */}
+                              {/* Disclosure Expand/Collapse Button */}
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -806,7 +848,6 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({
                                     : 'text-[#8E9299] hover:text-[#1A1A1A] hover:bg-[#F1F3F5] border-transparent hover:border-[#ECEEF2]'
                                 }`}
                                 title={isExpanded ? "Collapse details" : "Expand details"}
-                                aria-label={isExpanded ? "Collapse details" : "Expand details"}
                               >
                                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                               </button>
@@ -814,21 +855,17 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({
 
                           </div>
 
-                          {/* Single-Expanded Details Accordion */}
+                          {/* Simplified Expanded Dropdown (No repeated view counts, no keywords, no hashtags) */}
                           {isExpanded && (
-                            <div className="border-t border-[#ECEEF2]/70 bg-[#F8F9FB]/60 px-5 py-4 space-y-4 animate-in fade-in duration-150 transition-all">
+                            <div className="border-t border-[#ECEEF2]/70 bg-[#F8F9FB]/60 px-5 py-5 space-y-5 animate-in fade-in duration-150">
                               
-                              {/* 1. Views & Watch on YouTube */}
-                              <div className="flex items-center gap-3 text-xs">
-                                <span className="font-bold text-[#1A1A1A]">
-                                  {formatViewCount(item.views)}
-                                </span>
-                                <span className="text-[#D1D5DB] font-light">|</span>
+                              {/* 1. Watch on YouTube */}
+                              <div>
                                 <a
                                   href={item.youtubeUrl || `https://www.youtube.com/results?search_query=${encodeURIComponent(item.title)}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-[#666666] hover:text-[#2563EB] transition-colors inline-flex items-center gap-1 font-medium group cursor-pointer"
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] bg-white border border-[#ECEEF2] text-xs text-[#1A1A1A] font-semibold hover:text-[#2563EB] hover:border-[#2563EB]/40 transition-colors shadow-2xs group"
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   <span>Watch on YouTube</span>
@@ -837,14 +874,12 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({
                               </div>
 
                               {/* 2. Why It Works */}
-                              <div className="space-y-1.5 pt-3 border-t border-[#ECEEF2]/60">
+                              <div className="space-y-2 pt-2 border-t border-[#ECEEF2]/60">
                                 <h4 className="text-[11px] font-bold text-[#8E9299] uppercase tracking-wider">
                                   Why It Works
                                 </h4>
                                 {item.whyItWorks ? (
-                                  <p className="text-xs text-[#333333] leading-relaxed font-normal">
-                                    {item.whyItWorks}
-                                  </p>
+                                  renderCleanPlainText(item.whyItWorks)
                                 ) : (
                                   <div>
                                     <button
@@ -873,14 +908,12 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({
                               </div>
 
                               {/* 3. What It Covers */}
-                              <div className="space-y-1.5 pt-3 border-t border-[#ECEEF2]/60">
+                              <div className="space-y-2 pt-3 border-t border-[#ECEEF2]/60">
                                 <h4 className="text-[11px] font-bold text-[#8E9299] uppercase tracking-wider">
                                   What It Covers
                                 </h4>
                                 {item.whatItCovers ? (
-                                  <p className="text-xs text-[#333333] leading-relaxed font-normal">
-                                    {item.whatItCovers}
-                                  </p>
+                                  renderCleanPlainText(item.whatItCovers)
                                 ) : (
                                   <div>
                                     <button
@@ -895,7 +928,7 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({
                                       {analyzingState?.[item.id]?.what_it_covers ? (
                                         <>
                                           <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#2563EB]" />
-                                          <span>Extracting topics & framework...</span>
+                                          <span>Extracting topics & tools...</span>
                                         </>
                                       ) : (
                                         <>
@@ -908,26 +941,7 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({
                                 )}
                               </div>
 
-                              {/* 4. Keywords & Hashtags */}
-                              <div className="space-y-1.5 pt-3 border-t border-[#ECEEF2]/60">
-                                <h4 className="text-[11px] font-bold text-[#8E9299] uppercase tracking-wider block">
-                                  Keywords & Hashtags
-                                </h4>
-                                <div className="flex flex-wrap items-center gap-1.5">
-                                  {(item.keywords || [nicheInput.trim() || 'Software Architecture', 'Tutorial', 'Best Practices']).map((kw, i) => (
-                                    <span key={`kw-${i}`} className="px-2.5 py-1 rounded-[6px] bg-white border border-[#ECEEF2] text-[#4B5565] text-[11px] font-medium">
-                                      {kw}
-                                    </span>
-                                  ))}
-                                  {(item.hashtags || [`#${(nicheInput.trim() || 'Tech').replace(/\s+/g, '')}`, '#YouTubeGrowth', '#CreatorTips']).map((ht, i) => (
-                                    <span key={`ht-${i}`} className="px-2.5 py-1 rounded-[6px] bg-[#2563EB]/10 text-[#2563EB] text-[11px] font-semibold">
-                                      {ht}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-
-                              {/* 5. Opportunity Score */}
+                              {/* 4. Opportunity Score */}
                               <div className="space-y-1.5 pt-3 border-t border-[#ECEEF2]/60">
                                 <div className="flex items-center gap-2">
                                   <h4 className="text-[11px] font-bold text-[#8E9299] uppercase tracking-wider">
@@ -949,10 +963,9 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({
                       );
                     })}
                   </div>
-
                 </div>
+              )}
 
-              </div>
             </div>
           )}
 
