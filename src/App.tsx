@@ -31,6 +31,7 @@ import {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
+  const [activeProjectId, setActiveProjectId] = useState<string | null>('project-1');
   
   // Modal states
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -117,6 +118,22 @@ export default function App() {
   };
 
   const handleOpenCreateProject = (prefilled?: string) => {
+    const newName = prefilled && prefilled.trim() ? prefilled.trim() : 'Untitled';
+    const newProj: Project = {
+      id: `project-${Date.now()}`,
+      name: newName,
+      format: 'video',
+      progress: 5,
+      lastEdited: 'Edited just now',
+      duration: '06:30',
+      thumbnail: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
+      script: '',
+      description: '',
+      seoTags: [],
+      videoTitle: prefilled || '',
+    };
+    setProjects((prev) => [newProj, ...prev]);
+    setActiveProjectId(newProj.id);
     setPrefillName(prefilled || '');
     setActiveTab('new_project');
   };
@@ -144,8 +161,20 @@ export default function App() {
     };
 
     setProjects((prev) => [newProj, ...prev]);
+    setActiveProjectId(newProj.id);
     setActiveTab('dashboard');
     showToast(`Successfully initialized "${projectName}" under draft!`);
+  };
+
+  const handleProjectAutoSave = (updatedData: Partial<Project>) => {
+    if (!activeProjectId) return;
+    setProjects((prev) =>
+      prev.map((p) =>
+        p.id === activeProjectId
+          ? { ...p, ...updatedData, lastEdited: 'Edited just now' }
+          : p
+      )
+    );
   };
 
   const handleProjectWizardSuccess = (data: {
@@ -156,28 +185,42 @@ export default function App() {
     script: string;
     description: string;
   }) => {
-    const newProj: Project = {
-      id: `project-${Date.now()}`,
-      name: data.name,
-      format: data.format,
-      progress: 15,
-      lastEdited: 'Edited just now',
-      duration: data.duration,
-      thumbnail: data.thumbnail,
-    };
-    setProjects((prev) => [newProj, ...prev]);
+    if (activeProjectId) {
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.id === activeProjectId
+            ? {
+                ...p,
+                name: data.name || p.name,
+                format: data.format,
+                duration: data.duration,
+                thumbnail: data.thumbnail,
+                script: data.script,
+                description: data.description,
+                progress: Math.min(100, (p.progress || 10) + 30),
+                lastEdited: 'Edited just now',
+              }
+            : p
+        )
+      );
+    }
     setActiveTab('projects');
-    showToast(`Workspace "${data.name}" published with high-retention script!`);
+    showToast(`Project workspace "${data.name}" saved to archive!`);
   };
 
   const handleDeleteProject = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setProjects((prev) => prev.filter((p) => p.id !== id));
+    if (activeProjectId === id) {
+      setActiveProjectId(null);
+    }
     showToast('Project draft removed successfully.');
   };
 
   const handleResumeProject = (project: Project) => {
-    showToast(`Entering timeline for "${project.name}" (Format: ${project.format.toUpperCase()})`);
+    setActiveProjectId(project.id);
+    setActiveTab('new_project');
+    showToast(`Opened workspace for "${project.name}"`);
   };
 
   const handleCreditsTopUp = (addedCredits: number) => {
@@ -493,10 +536,12 @@ export default function App() {
 
           {activeTab === 'new_project' && (
             <ProjectWizard
+              project={projects.find((p) => p.id === activeProjectId)}
+              onAutoSave={handleProjectAutoSave}
               onSuccess={handleProjectWizardSuccess}
               onCancel={() => {
                 setActiveTab('dashboard');
-                showToast('Draft cancelled.');
+                showToast('Returned to dashboard.');
               }}
               prefillName={prefillName}
             />

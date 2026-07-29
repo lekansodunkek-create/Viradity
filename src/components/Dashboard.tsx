@@ -28,6 +28,10 @@ export interface Project {
   lastEdited: string;
   duration: string;
   thumbnail: string;
+  script?: string;
+  description?: string;
+  seoTags?: string[];
+  videoTitle?: string;
 }
 
 export interface TrendingIdea {
